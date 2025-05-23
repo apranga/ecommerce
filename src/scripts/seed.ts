@@ -28,7 +28,9 @@ export default async function seedDemoData({ container }: ExecArgs) {
   const salesChannelModuleService = container.resolve(Modules.SALES_CHANNEL);
   const storeModuleService = container.resolve(Modules.STORE);
 
-  const countries = ["gb", "de", "dk", "se", "fr", "es", "it"];
+  const eurCountries = ["gb", "de", "dk", "se", "fr", "es", "it"];
+  const usCountries = ["us"];
+
   logger.info("Finished preparing config...");
   logger.info("Seeding store data...");
   const [store] = await storeModuleService.listStores();
@@ -58,11 +60,11 @@ export default async function seedDemoData({ container }: ExecArgs) {
       update: {
         supported_currencies: [
           {
-            currency_code: "eur",
-            is_default: true,
+            currency_code: "usd",
+            is_default: true
           },
           {
-            currency_code: "usd",
+            currency_code: "eur"
           },
         ],
         default_sales_channel_id: defaultSalesChannel[0].id,
@@ -74,20 +76,27 @@ export default async function seedDemoData({ container }: ExecArgs) {
     input: {
       regions: [
         {
-          name: "Europe",
-          currency_code: "eur",
-          countries,
+          name: "United States",
+          currency_code: "usd",
+          countries: usCountries,
           payment_providers: ["pp_system_default"],
         },
+        {
+          name: "Europe",
+          currency_code: "eur",
+          countries: eurCountries,
+          payment_providers: ["pp_system_default"],
+        }
       ],
     },
   });
-  const region = regionResult[0];
+  const [usRegion, eurRegion] = regionResult;
+
   logger.info("Finished seeding regions.");
 
   logger.info("Seeding tax regions...");
   await createTaxRegionsWorkflow(container).run({
-    input: countries.map((country_code) => ({
+    input: [...eurCountries, ...usCountries].map((country_code) => ({
       country_code,
     })),
   });
@@ -100,6 +109,14 @@ export default async function seedDemoData({ container }: ExecArgs) {
     input: {
       locations: [
         {
+          name: "United States Southwest Warehouse",
+          address: {
+            city: "Perris",
+            country_code: "US",
+            address_1: "",
+          },
+        },
+        {
           name: "European Warehouse",
           address: {
             city: "Copenhagen",
@@ -110,11 +127,19 @@ export default async function seedDemoData({ container }: ExecArgs) {
       ],
     },
   });
-  const stockLocation = stockLocationResult[0];
+  const [usStockLocation, eurStockLocation] = stockLocationResult;
 
   await link.create({
     [Modules.STOCK_LOCATION]: {
-      stock_location_id: stockLocation.id,
+      stock_location_id: usStockLocation.id,
+    },
+    [Modules.FULFILLMENT]: {
+      fulfillment_provider_id: "manual_manual",
+    },
+  });
+  await link.create({
+    [Modules.STOCK_LOCATION]: {
+      stock_location_id: eurStockLocation.id,
     },
     [Modules.FULFILLMENT]: {
       fulfillment_provider_id: "manual_manual",
@@ -142,54 +167,75 @@ export default async function seedDemoData({ container }: ExecArgs) {
     shippingProfile = shippingProfileResult[0];
   }
 
-  const fulfillmentSet = await fulfillmentModuleService.createFulfillmentSets({
-    name: "European Warehouse delivery",
-    type: "shipping",
-    service_zones: [
-      {
-        name: "Europe",
-        geo_zones: [
-          {
-            country_code: "gb",
-            type: "country",
-          },
-          {
-            country_code: "de",
-            type: "country",
-          },
-          {
-            country_code: "dk",
-            type: "country",
-          },
-          {
-            country_code: "se",
-            type: "country",
-          },
-          {
-            country_code: "fr",
-            type: "country",
-          },
-          {
-            country_code: "es",
-            type: "country",
-          },
-          {
-            country_code: "it",
-            type: "country",
-          },
-        ],
-      },
-    ],
-  });
+  const fulfillmentSet = await fulfillmentModuleService.createFulfillmentSets(
+    {
+      name: "Warehouse delivery",
+      type: "shipping",
+      service_zones: [
+        {
+          name: "United States",
+          geo_zones: [
+            {
+              country_code: "us",
+              type: "country",
+            },
+          ],
+        },
+        {
+          name: "Europe",
+          geo_zones: [
+            {
+              country_code: "gb",
+              type: "country",
+            },
+            {
+              country_code: "de",
+              type: "country",
+            },
+            {
+              country_code: "dk",
+              type: "country",
+            },
+            {
+              country_code: "se",
+              type: "country",
+            },
+            {
+              country_code: "fr",
+              type: "country",
+            },
+            {
+              country_code: "es",
+              type: "country",
+            },
+            {
+              country_code: "it",
+              type: "country",
+            },
+          ],
+        },
+      ],
+    },
+  );
 
-  await link.create({
-    [Modules.STOCK_LOCATION]: {
-      stock_location_id: stockLocation.id,
+  await link.create([
+    {
+      [Modules.STOCK_LOCATION]: {
+        stock_location_id: usStockLocation.id,
+      },
+      [Modules.FULFILLMENT]: {
+        fulfillment_set_id: fulfillmentSet.id,
+      }
     },
-    [Modules.FULFILLMENT]: {
-      fulfillment_set_id: fulfillmentSet.id,
-    },
-  });
+    {
+      [Modules.STOCK_LOCATION]: {
+        stock_location_id: eurStockLocation.id,
+      },
+      [Modules.FULFILLMENT]: {
+        fulfillment_set_id: fulfillmentSet.id
+      },
+    }
+  ]);
 
   await createShippingOptionsWorkflow(container).run({
     input: [
@@ -210,11 +256,7 @@ export default async function seedDemoData({ container }: ExecArgs) {
             amount: 10,
           },
           {
-            currency_code: "eur",
-            amount: 10,
-          },
-          {
-            region_id: region.id,
+            region_id: usRegion.id,
             amount: 10,
           },
         ],
@@ -248,11 +290,79 @@ export default async function seedDemoData({ container }: ExecArgs) {
             amount: 10,
           },
           {
+            region_id: usRegion.id,
+            amount: 10,
+          },
+        ],
+        rules: [
+          {
+            attribute: "enabled_in_store",
+            value: "true",
+            operator: "eq",
+          },
+          {
+            attribute: "is_return",
+            value: "false",
+            operator: "eq",
+          },
+        ],
+      },
+    ],
+  });
+  await createShippingOptionsWorkflow(container).run({
+    input: [
+      {
+        name: "Standard Shipping",
+        price_type: "flat",
+        provider_id: "manual_manual",
+        service_zone_id: fulfillmentSet.service_zones[1].id,
+        shipping_profile_id: shippingProfile.id,
+        type: {
+          label: "Standard",
+          description: "Ship in 2-3 days.",
+          code: "standard",
+        },
+        prices: [
+          {
             currency_code: "eur",
             amount: 10,
           },
           {
-            region_id: region.id,
+            region_id: eurRegion.id,
+            amount: 10,
+          },
+        ],
+        rules: [
+          {
+            attribute: "enabled_in_store",
+            value: "true",
+            operator: "eq",
+          },
+          {
+            attribute: "is_return",
+            value: "false",
+            operator: "eq",
+          },
+        ],
+      },
+      {
+        name: "Express Shipping",
+        price_type: "flat",
+        provider_id: "manual_manual",
+        service_zone_id: fulfillmentSet.service_zones[1].id,
+        shipping_profile_id: shippingProfile.id,
+        type: {
+          label: "Express",
+          description: "Ship in 24 hours.",
+          code: "express",
+        },
+        prices: [
+          {
+            currency_code: "eur",
+            amount: 10,
+          },
+          {
+            region_id: eurRegion.id,
             amount: 10,
           },
         ],
@@ -275,7 +385,13 @@ export default async function seedDemoData({ container }: ExecArgs) {
 
   await linkSalesChannelsToStockLocationWorkflow(container).run({
     input: {
-      id: stockLocation.id,
+      id: usStockLocation.id,
+      add: [defaultSalesChannel[0].id],
+    },
+  });
+  await linkSalesChannelsToStockLocationWorkflow(container).run({
+    input: {
+      id: eurStockLocation.id,
       add: [defaultSalesChannel[0].id],
     },
   });

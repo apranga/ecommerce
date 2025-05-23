@@ -252,7 +252,6 @@ export default async function seedProducts({
   logger.info("Generating product data...")
   const productsData = productDataArgs.map((args) => _generateCoreProductData(args));
   logger.info("Finished generating product data.");
-  logger.info(JSON.stringify(productsData, null, 2));
 
   logger.info("Seeding the product data...")
   const { result: products } = await createProductsWorkflow(container).run({
