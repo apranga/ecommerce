@@ -137,8 +137,8 @@ const SIZE_OPTION =  {
 const COLOR_DELIMITER = '-';
 const WEIGHT = 2;
 
-const CURRENCY_CODE = "usd";
-const PRICE = 30;
+const USD_PRICE = 30;
+const EU_PRICE = 26;
 
 export default async function seedProducts({
   container,
@@ -218,9 +218,13 @@ export default async function seedProducts({
           },
           prices: [
             {
-              amount: PRICE,
-              currency_code: CURRENCY_CODE,
+              amount: USD_PRICE,
+              currency_code: "usd",
             },
+            {
+              amount: EU_PRICE,
+              currency_code: "eur"
+            }
           ],
         };
         variants.push(variant);
@@ -259,6 +263,7 @@ export default async function seedProducts({
       products: productsData,
     },
   })
+
   logger.info("Finished seeding the product data.");
 
   logger.info("Seeding inventory levels...")
