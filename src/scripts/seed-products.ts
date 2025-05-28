@@ -93,16 +93,34 @@ const productDataArgs : ProductDataArgs[] = [
     colors: ["black", "brown", "navy", "red-heather"]
   },
   {
+    name: "retro-sunset",
+    title: "Palm Trees",
+    description: "A cluster of palm trees framed by a retro sunset theme",
+    colors: ["black", "white"]
+  },
+  {
     name: "sea-otter",
     title: "Sea Otter",
     description: "A cute sea otter floating on the water",
     colors: ["light-blue", "white", "orange"]
   },
   {
+    name: "sequoias",
+    title: "Forest of Sequoias",
+    description: "A forest of towering redwood sequoias",
+    colors: ["brown", "black"]
+  },
+  {
     name: "sunflower",
     title: "Bright Sunflower",
     description: "A single sunflower head, open, tall, and yellow",
     colors: ["slate", "heather", "blue", "soft-pink"]
+  },
+  {
+    name: "sunset-landscape",
+    title: "Sun over Mountains",
+    description: "A sun setting behind a forested mountain range",
+    colors: ["purple", "navy", "royal-blue"]
   },
   {
     name: "sunflowers",
@@ -128,6 +146,12 @@ const productDataArgs : ProductDataArgs[] = [
     description: "A curving waterfall set in a mountainous landscape",
     colors: ["light-blue", "white", "teal", "soft-pink"]
   },
+  {
+    name: "yin-yang",
+    title: "Yin-Yang with Nature",
+    description: "An artistic rendering of trees, the sun, and the moon within a yin-yang backdrop",
+    colors: ["military-green", "black", "slate"]
+  }
 ];
 
 const SIZE_OPTION =  {
