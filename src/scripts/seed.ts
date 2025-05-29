@@ -17,6 +17,7 @@ import {
   Modules,
   ProductStatus,
 } from "@medusajs/framework/utils";
+import seedProducts from "./seed-products";
 
 export default async function seedDemoData({ container }: ExecArgs) {
   console.log("In seed demo data");
@@ -412,6 +413,7 @@ export default async function seedDemoData({ container }: ExecArgs) {
     },
   });
   const publishableApiKey = publishableApiKeyResult[0];
+  console.log("Publishable API Key Token:\n", publishableApiKey.token);
 
   await linkSalesChannelsToApiKeyWorkflow(container).run({
     input: {
@@ -421,31 +423,7 @@ export default async function seedDemoData({ container }: ExecArgs) {
   });
   logger.info("Finished seeding publishable API key data.");
 
-  logger.info("Seeding product category data...");
-
-  const { result: categoryResult } = await createProductCategoriesWorkflow(
-    container
-  ).run({
-    input: {
-      product_categories: [
-        {
-          name: "Shirts",
-          is_active: true,
-        },
-        {
-          name: "Sweatshirts",
-          is_active: true,
-        },
-        {
-          name: "Pants",
-          is_active: true,
-        },
-        {
-          name: "Merch",
-          is_active: true,
-        },
-      ],
-    },
-  });
-  logger.info("Finished seeding product category data.")
+  logger.info("Starting script to seed product related data...");
+  await seedProducts({ container, args: [] });
+  logger.info("Finished executing script to seed product related data.");
 }
